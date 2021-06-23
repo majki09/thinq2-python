@@ -6,9 +6,9 @@ import signal
 from thinq2.controller.auth import ThinQAuth
 from thinq2.controller.thinq import ThinQ
 
-LANGUAGE_CODE = os.environ.get("LANGUAGE_CODE", "ko-KR")
-COUNTRY_CODE = os.environ.get("COUNTRY_CODE", "KR")
-STATE_FILE = os.environ.get("STATE_FILE", "state.json")
+LANGUAGE_CODE = "en-US" #os.environ.get("LANGUAGE_CODE", "en-US")
+COUNTRY_CODE = "PL" #os.environ.get("COUNTRY_CODE", "PL")
+STATE_FILE = "state.json" #os.environ.get("STATE_FILE", "state.json")
 
 #############################################################################
 # load from existing state or create a new client                           #
@@ -76,6 +76,6 @@ for device in devices.items:
 
 print("\nListening for device events. Use Ctrl-C/SIGINT to quit.\n")
 
-thinq.mqtt.on_message = lambda client, userdata, msg: print(msg.payload)
+#thinq.mqtt.on_message = lambda client, userdata, msg: print(msg.payload)
 thinq.mqtt.connect()
 thinq.mqtt.loop_forever()

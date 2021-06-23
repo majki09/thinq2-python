@@ -2,6 +2,8 @@ import requests
 import ssl
 from urllib.parse import urlparse
 
+import paho.mqtt.client as mqtt
+
 from OpenSSL import crypto
 from OpenSSL.SSL import FILETYPE_PEM
 from paho.mqtt.client import Client
@@ -16,6 +18,32 @@ from thinq2.util.filesystem import TempDir
 from thinq2 import AWS_IOTT_CA_CERT_URL, AWS_IOTT_ALPN_PROTOCOL
 
 
+class MQTT_Client:
+     # MQTT Client part
+
+    def __init__(self, server_url, username, password):
+        self.server_url = server_url
+        self.username = username
+        self.password = password
+
+        self.client_id = "LG_ThinQ"
+        self.device_name = "LG ThinQ Client"
+        self.topic = "lg_thinq"
+
+        self.client = mqtt.Client(self.client_id)
+        self.client.username_pw_set(username, password)
+
+        self.client.connect(server_url)
+        self.client.loop_start()
+
+    # MQTT Client publish part
+    def publish(self, topic, message, wait_for_ack = False):
+        QoS = 2 if wait_for_ack else 0
+        message_info = self.client.publish(topic, message, QoS)
+        if wait_for_ack:
+            message_info.wait_for_publish()
+
+
 @controller(MQTTConfiguration)
 class ThinQMQTT:
     def __init__(self, auth):
@@ -25,6 +53,9 @@ class ThinQMQTT:
         if not self.client.is_connected():
             endpoint = urlparse(self.route.mqtt_server)
             self.client.connect(endpoint.hostname, endpoint.port)
+            #self.client.connect("localhost",1883) 
+            print(endpoint.hostname, endpoint.port)
+            #print(endpoint)
 
     def loop_start(self):
         self.connect()
@@ -35,6 +66,8 @@ class ThinQMQTT:
         self.client.loop_forever()
 
     def on_message(self, client, userdata, msg):
+        #print("msg: ", msg)
+        #print("userdata: ", userdata)
         self._on_message(client, userdata, msg)
 
     def on_connect(self, client, userdata, flags, rc):
@@ -49,6 +82,8 @@ class ThinQMQTT:
         message = None
         try:
             message = MQTTMessage.Schema().loads(msg.payload)
+            #print("payload: " + msg.payload.decode("utf-8"))
+            mqtt_client.publish(mqtt_client.topic, msg.payload) #.decode("ascii"))
         except Exception as e:
             print("Can't parse MQTT message:", e)
         self.on_device_message(message)
@@ -115,3 +150,7 @@ class ThinQMQTT:
     @initializer
     def route(self):
         return self.common_client.get_route()
+
+mqtt_client = MQTT_Client(server_url="192.168.0.11",
+                          username="username",
+                          password="password")
